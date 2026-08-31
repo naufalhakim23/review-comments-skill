@@ -8,7 +8,7 @@
     {
       "name": "review-comments",
       "source": "./",
-      "description": "Verify MR/PR review comments against the current code, fix what is real, then commit, push, and reply on the threads."
+      "description": "Verify MR/PR review comments against the current code, fix what is real, then commit, push, and reply on the threads. Bundles a fallback code-review skill."
     }
   ]
 }

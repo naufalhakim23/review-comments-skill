@@ -25,7 +25,7 @@ With no URL, the skill derives the target from the current branch.
 2. Pull every thread, paginated, dropping system notes and resolved threads
 3. Verify each comment against the code on the current branch: already handled / valid / not valid
 4. Fix what is real, root cause over symptom
-5. Run `/code-review` over the same branch, before committing, and fix what it confirms
+5. Run `code-review` over the same branch, before committing, and fix what it confirms
 6. Clean up the comments in every file the branch touched
 7. Commit
 8. Push, then reply on each thread citing the pushed SHA
@@ -38,7 +38,13 @@ Resolving threads stays a human decision.
 
 - `glab` authenticated for GitLab, `gh` authenticated for GitHub
 - `python3` for the thread-parsing snippets
-- The `code-review` skill, for step 5
+
+## Bundled skills
+
+- `review-comments` — the main flow above
+- `code-review` — a standalone cold-diff review skill, used by step 5. Claude Code's built-in
+  `/code-review` takes precedence when it is installed; this one is the fallback so the flow works
+  without it. It reports findings and never commits or posts them.
 
 ## License
 

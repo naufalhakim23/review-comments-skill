@@ -107,7 +107,8 @@ plainly in the reply what is deferred and why. Do not silently shrink the work.
 ## 5. Run /code-review on top, before committing
 
 Once the thread fixes are in the working tree but before anything is committed, invoke the
-`code-review` skill over the same branch. It reads the diff cold and finds what a comment-driven pass
+`code-review` skill over the same branch. Claude Code's built-in one if it is there, otherwise the
+`code-review` skill bundled in this plugin. It reads the diff cold and finds what a comment-driven pass
 cannot: the bot only flags what it noticed.
 
 Treat its output exactly like a bot comment — verify each finding against the code before acting.
