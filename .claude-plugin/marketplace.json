@@ -1,0 +1,14 @@
+{
+  "name": "review-comments-marketplace",
+  "owner": {
+    "name": "naufalhakim23",
+    "email": "naufal.hakim@edukita.com"
+  },
+  "plugins": [
+    {
+      "name": "review-comments",
+      "source": "./",
+      "description": "Verify MR/PR review comments against the current code, fix what is real, then commit, push, and reply on the threads."
+    }
+  ]
+}

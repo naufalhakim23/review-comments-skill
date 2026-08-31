@@ -1,0 +1,11 @@
+{
+  "name": "review-comments",
+  "description": "Verify MR/PR review comments against the current code, fix what is real, then commit, push, and reply on the threads.",
+  "version": "1.0.0",
+  "author": {
+    "name": "naufalhakim23",
+    "email": "naufal.hakim@edukita.com"
+  },
+  "homepage": "https://github.com/naufalhakim23/review-comments-skill",
+  "license": "MIT"
+}
