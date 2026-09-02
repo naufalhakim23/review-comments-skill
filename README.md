@@ -24,7 +24,7 @@ With no URL, the skill derives the target from the current branch.
 1. Resolve the target (URL, or the MR/PR for the current branch)
 2. Pull every thread, paginated, dropping system notes and resolved threads
 3. Verify each comment against the code on the current branch: already handled / valid / not valid
-4. Fix what is real, root cause over symptom
+4. Fix what is real, root cause over symptom, with every new check seen failing before the fix lands
 5. Run `code-review` over the same branch, before committing, and fix what it confirms
 6. Clean up the comments in every file the branch touched
 7. Commit
@@ -33,6 +33,9 @@ With no URL, the skill derives the target from the current branch.
 
 Replies come after the push. A reply citing a SHA nobody can open is worse than no reply.
 Resolving threads stays a human decision.
+
+Stacked MRs are handled explicitly: when a chained branch gets a finding on a file its parent owns, the
+fix is committed on the parent, then merged forward, so both MRs carry it.
 
 ## Requirements
 

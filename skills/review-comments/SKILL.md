@@ -34,6 +34,14 @@ here, live on a different endpoint and are fetched in the next step.
 Both CLIs are usually already authenticated. If not, ask the user to run the login with `!` so the output
 lands in the session, and do not try to work around it.
 
+**Check what the MR targets.** A stack of tickets often ships as a chain: MR A into `main`, MR B into
+A's branch, MR C into B's. `glab mr list` prints it as `(target) ← (source)`; `gh pr view --json baseRefName`
+gives the same thing. In a chain, the branch under review contains its parents' commits, so both the bot
+and `/code-review` will flag files that belong to a parent ticket. **Fix a file on the branch that owns
+it, then merge forward** — commit on the parent, push it so the parent's own MR carries the fix, then
+merge the parent into the child and push that too. Fixing a parent's file inside the child's MR hides
+the change from the reviewers who asked for it and leaves the parent shipping the bug.
+
 ## 2. Pull the threads, drop the noise
 
 Keep only human/bot review comments anchored to a file and line. Discard `system: true` notes
@@ -43,6 +51,9 @@ Always paginate. An active MR blows past one page, and a truncated fetch silentl
 you never replied to. Both CLIs emit one JSON array *per page* under `--paginate`, so parse the stream
 with `raw_decode`, not `json.load`.
 
+A thread is one discussion with many notes. Filter on the **root** note, not on each note, or a thread
+with replies prints once per note and a resolved root still leaks its replies back into the list.
+
 ```bash
 glab api --paginate "$P/discussions?per_page=100" | python3 -c "
 import json,sys
@@ -51,12 +62,21 @@ while i < len(buf):
     page,i = d.raw_decode(buf,i)
     while i < len(buf) and buf[i].isspace(): i += 1
     for disc in page:
-        for n in disc['notes']:
-            if n['type']=='DiffNote' and not n.get('resolved'):
-                p=n.get('position') or {}
-                print(disc['id'], p.get('new_path'), p.get('new_line'), n['body'][:800], sep=' | ')
+        notes=[n for n in disc['notes'] if n['type']=='DiffNote']
+        if not notes: continue
+        root=notes[0]
+        if root.get('resolved'): continue
+        p=root.get('position') or {}
+        print('===', disc['id'], '|', p.get('new_path'), ':', p.get('new_line'), '| notes', len(notes))
+        print(root['body'].split('<details>')[0][:1200])
+        for n in notes[1:]:
+            print('   -- reply by', n['author']['username'], ':', n['body'][:200].replace(chr(10),' '))
 "
 ```
+
+Splitting on `<details>` drops the bot's severity table and "Prompt for AI Agent" block, which is
+packaging, not claim. Printing the replies matters too: a thread you already answered on an earlier
+pass is not a new finding.
 
 GitHub has no discussion object: every inline comment is its own row, and a reply carries the root
 comment's id in `in_reply_to_id`. Group by that to reconstruct threads.
@@ -101,6 +121,17 @@ Root cause over symptom, shortest diff that actually holds, one runnable check
 behind non-trivial logic. Then verify for the stack you touched (build, tests, lint, typecheck) before
 claiming anything. A fix nobody ran is not a fix.
 
+**Every new check must be seen failing without the fix.** Stash the source (`git stash push -- <source dirs>`),
+rerun that one example, confirm it goes red, `git stash pop`. A green test proves nothing about whether
+it guards anything: an unrelated filter upstream can hide the bug so the test passes either way, and you
+ship a fix with a test that would never have caught it. When the check stays green with the fix stashed,
+the setup is wrong — widen it until the real defect is what the assertion depends on.
+
+**Sweep for the same defect before committing.** A fix you just applied is a pattern, and the same
+pattern usually has siblings. Grep the branch for them (`rg '<the thing you removed>'`) and decide each
+one explicitly. A guard dropped in one method is worth nothing if the sibling method one file over drops
+it too, and finding out from the next review round costs a whole cycle.
+
 If a comment is valid but the fix is genuinely out of scope for this MR, do the in-scope part, and say
 plainly in the reply what is deferred and why. Do not silently shrink the work.
 
@@ -142,6 +173,13 @@ Rerun the linter after this pass, comment reflows can trip line-length rules.
 Commit under the usual conventions (`fix(module): ...`, one line, only this session's files). Then
 push, because a SHA quoted in a thread reply resolves for the reviewer only once the branch is on the
 remote. Confirm the push with the user unless the user already told you to push.
+
+Stage per file. A working tree usually carries unrelated local work (scratch files, env tweaks, a schema
+dump from another branch), and `git add -A` sweeps it into a feature MR.
+
+In a stacked chain, a fix that belongs to a parent ticket is committed and pushed on the parent branch,
+then merged forward into the child, which is pushed too. Both MRs end up carrying it, and each stays
+readable on its own. Rerun the suite on the child after the merge before quoting any SHA.
 
 Replies come *after* the push, never before. A reply citing a SHA nobody can open is worse than no
 reply.
